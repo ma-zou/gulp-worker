@@ -1,0 +1,29 @@
+{
+  "name": "gulp-worker",
+  "version": "1.0.0",
+  "description": "Gulp Worker for local project development",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Malte Zoudlik",
+  "license": "ISC",
+  "dependencies": {
+    "browser-sync": "^2.26.3",
+    "chokidar": "^2.0.4",
+    "cli-color": "^1.3.0",
+    "fs": "^0.0.1-security",
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^6.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-connect-php": "^1.0.3",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-plumber": "^1.2.0",
+    "gulp-sass": "^4.0.2",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-uglify": "^3.0.1",
+    "gulp.spritesmith": "^6.9.0",
+    "path": "^0.12.7",
+    "process": "^0.11.10"
+  }
+}
