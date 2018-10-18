@@ -1,0 +1,23 @@
+{
+    "browserSync": {
+        "port": 3010
+    },
+    "scss": {
+        "_comment_inputs_shema": [
+            {
+                "src": "css/scss/",
+                "name": "styles.scss",
+                "dest": "css/"
+            }
+        ],
+        "outputStyle": "compressed",
+        "autoprefixer": {
+            "browsers": [
+                "last 2 versions",
+                "> 5%"
+            ]
+        }
+    },
+    "log": true,
+    "javascript": true,
+}
