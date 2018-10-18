@@ -15,22 +15,58 @@ var gulp = require('gulp'),
     chokidar = require('chokidar'),
     path = require('path'),
     clc = require('cli-color'),
-    env = {};
+    inquirer = require('inquirer')
+env = {};
 
 // you can also overwrite this path by: --mountpath /home/dexter
 env.conf_file = "worker.config.json";
-env.conf = JSON.parse(fs.readFileSync(env.conf_file));
-env.cwd = '../';
-env.root_path = (typeof env.conf.rootDir !== "undefined") ? '..' + env.conf.rootDir : '../main/'
-if (env.root_path.slice(-1) != '/') env.root_path += '/';
-env.node_version = process.version;
-
-var conf_missing = !fs.existsSync(env.conf_file);
+var conf_template = {
+    "browserSync": {
+        "port": 3010
+    },
+    "scss": {
+        "_comment_inputs_shema": [
+            {
+                "src": "css/scss/",
+                "name": "styles.scss",
+                "dest": "css/"
+            }
+        ],
+        "outputStyle": "compressed",
+        "autoprefixer": {
+            "browsers": [
+                "last 2 versions",
+                "> 5%"
+            ]
+        }
+    },
+    "log": true,
+    "javascript": true
+};
 
 // define stylings
 var error = clc.red,
     info = clc.xterm(39),
     warning = clc.yellow;
+
+var conf_missing = !fs.existsSync(env.conf_file);
+
+
+if (conf_missing || (!conf_missing && fs.statSync(env.conf_file).size == 0)) {
+    if (fs.writeFileSync(env.conf_file, JSON.stringify(conf_template, null, 2))) {
+        dlog("Default config created at " + env.conf_file, log);
+        conf_missing = false;
+    }
+    else {
+        dlog("worker.config.json is missing and couldn't be created...exiting");
+        process.exit();
+    }
+}
+env.conf = JSON.parse(fs.readFileSync(env.conf_file));
+env.cwd = '../';
+env.root_path = (typeof env.conf.rootDir !== "undefined") ? '..' + env.conf.rootDir : '../main/'
+if (env.root_path.slice(-1) != '/') env.root_path += '/';
+env.node_version = process.version;
 
 // define more arguments and parameters
 env.pid = process.pid;
@@ -64,13 +100,78 @@ env.watch_files = [
     '!' + env.asset_dir + 'js/site.js.map'
 ];
 
-// edit to get file from repositorie
-// var conf_template = (typeof argv.confTmp == 'string') ? argv.confTmp : env.init_cwd + '/example.conf.json';
-
 // **********
 // CONFIG END
 
-// initial task
+
+// change working dir
+gulp.task('change_dir', () => {
+
+    fs.readdir('../', (err, dirs) => {
+        if (err) {
+            console.log(err);
+        } else if (dirs) {
+            dirs.find((e) => {
+                dirs.splice(dirs.findIndex((entry) => entry === "local"), dirs.findIndex((entry) => entry === "local"));
+            });
+            dirs.unshift('CREATE NEW')
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: "dir",
+                    message: "select cwd or create new",
+                    choices: dirs
+                }
+            ]).then((selected) => {
+                if (selected === "CREATE NEW")
+                    inquirer.prompt([
+                        {
+                            "type": "input",
+                            "name": "root_folder",
+                            "message": "If needed define foldername  (if not '/main' will be used)",
+                            "default": "/main",
+                        }
+                    ]).then((input) => {
+                        if (input.root_folder !== "/main") {
+                            conf_template.rootDir = input.root_folder;
+                        }
+                    });
+            });
+        }
+    });
+
+    // inquirer.prompt([
+    //     {
+    //         type: "select",
+    //         name: "dir",
+    //         message: "select cwd or create new",
+    //         choices: poss_dirs
+    //     }
+    // ]).then((selected) => {
+    //     if (selected.settings) {
+    //         inquirer.prompt([
+    //             {
+    //                 "type": "input",
+    //                 "name": "root_folder",
+    //                 "message": "If needed define foldername  (if not '/main' will be used)",
+    //                 "default": "/main",
+    //             }
+    //         ]).then((input) => {
+    //             if (input.root_folder !== "/main") {
+    //                 conf_template.rootDir = input.root_folder;
+    //             }
+    //             inquirer.prompt([
+
+    //             ]);
+    //         });
+    //     } else {
+
+    //     }
+    //});
+});
+
+
+// default task
 gulp.task('default', () => {
     log = {};
 
@@ -87,18 +188,6 @@ gulp.task('default', () => {
         else {
             log.enableLog = false;
             console.log(error("Couldn't create logfile " + log.file + " - stopped logging"));
-        }
-    }
-
-    // exit process if conf missing
-    if (conf_missing || (!conf_missing && fs.statSync(env.conf_file).size == 0)) {
-        if (fs.writeFileSync(env.conf_file, fs.readFileSync(conf_template))) {
-            dlog("Default config created at " + env.conf_file, log);
-            conf_missing = false;
-        }
-        else {
-            dlog("conf.json is missing and couldn't be created...exiting");
-            process.exit();
         }
     }
 
@@ -185,9 +274,9 @@ gulp.task('default', () => {
 
 function scss() {
     dlog("Executing SCSS compiling", log);
-    console.log(info("Starting " + clc.bold("SCSS") + " compiler"));
 
     if (typeof env.scss_file === "string") {
+        console.log(info("Starting single " + clc.bold("SCSS") + " compiler"));
         gulp
             .src(env.scss_file)
             .pipe(plumber({
@@ -204,6 +293,7 @@ function scss() {
             .pipe(gulp.dest(env.css_dir))
             .pipe(browserSync.stream({ match: '**/*.css' }));
     } else {
+        console.log(info("Starting multi " + clc.bold("SCSS") + " compiler"));
         env.scss_file.forEach((file, index, files) => {
             gulp
                 .src(env.root_path + file.src + file.name)
